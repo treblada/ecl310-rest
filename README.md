@@ -8,5 +8,8 @@ This project will provide a REST API though which its possible got fetch and set
 # Dependencies
 * https://github.com/goburrow/modbus - Go MODbus library
 
+# Links
+* https://www.thehyve.nl/articles/open-source-software-licenses-part-3 - License compatibilities
+
 # Licensing
 This project is licensed under the GPLv3 license.

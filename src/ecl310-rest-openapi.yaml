@@ -1,0 +1,41 @@
+openapi: 3.0.3
+info:
+  title: ECL310 API
+  contact:
+    email: apiteam@swagger.io
+  license:
+    name: GPL v3
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+  version: 0.1
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+tags:
+  - name: health
+    description: Everything about your Pets
+    externalDocs:
+      description: Find out more
+      url: http://swagger.io
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: Get a health status
+      operationId: getHealth
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHealthResponse'          
+components:
+  schemas:
+    GetHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+#  requestBodies:
+
