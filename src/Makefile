@@ -9,16 +9,16 @@ OPENAPI_DIR=openapi
 .DEFAULT_GOAL=all
 
 build-darwin-amd64:
-	GOARCH=amd64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-darwin main.go
+	GOARCH=amd64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-darwin .
 
 build-darwin-arm:
-	GOARCH=arm64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-silicon main.go
+	GOARCH=arm64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-silicon .
 
 build-windows:
-	GOARCH=amd64 GOOS=windows go build -o ${BIN_DIR}/${BINARY_NAME}-windows main.go
+	GOARCH=amd64 GOOS=windows go build -o ${BIN_DIR}/${BINARY_NAME}-windows .
 
 build-linux:
-	GOARCH=amd64 GOOS=linux go build -o ${BIN_DIR}/${BINARY_NAME}-linux main.go
+	GOARCH=amd64 GOOS=linux go build -o ${BIN_DIR}/${BINARY_NAME}-linux .
 
 all: build-linux build-darwin-amd64 build-darwin-arm build-windows
 
@@ -54,6 +54,7 @@ openapi-generate: openapi-clean
 		--output openapi \
 		--additional-properties=isGoSubmodule=true \
 		--additional-properties=outputAsLibrary=true
+	goimports -w openapi/go/*.go
 
 openapi-clean:
 	rm -fr $(OPENAPI_DIR)/.openapi-generator

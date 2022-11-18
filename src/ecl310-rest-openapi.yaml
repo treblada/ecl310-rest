@@ -33,6 +33,7 @@ paths:
 components:
   schemas:
     GetHealthResponse:
+      title: GetHealthResponse
       type: object
       properties:
         status:

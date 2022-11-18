@@ -24,23 +24,19 @@ import (
 
 	"log"
 	"net/http"
+
+	api "github.com/treblada/ecl310-rest/services"
 )
 
 func main() {
-	fmt.Println("Hello, World!")
+	fmt.Println("ECL310 API starting")
+	config := parseCmdLine()
 	// Modbus TCP
-	client := modbus.TCPClient("localhost:502")
-	// Read input register 9
-	results, err := client.ReadHoldingRegisters(278, 4)
-	if err == nil {
-		fmt.Println(results)
-	} else {
-		fmt.Println(err)
-	}
+	modbusClient := modbus.TCPClient(fmt.Sprintf("%s:%d", config.eclHost, config.eclPort))
 
-	log.Printf("Server started")
+	log.Printf("ECL client ready.")
 
-	HealthService := openapi.NewHealthApiService()
+	HealthService := api.NewHealthApiService(modbusClient)
 	HealthServiceController := openapi.NewHealthApiController(HealthService)
 
 	router := openapi.NewRouter(HealthServiceController)
