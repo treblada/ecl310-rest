@@ -10,6 +10,11 @@ This project will provide a REST API though which its possible got fetch and set
 
 # Links
 * https://www.thehyve.nl/articles/open-source-software-licenses-part-3 - License compatibilities
+* https://forum.iobroker.net/topic/47557/modbus-adapter-danfoss-ecl-comfort-310-auslesen
+* https://assets.danfoss.com/documents/63854/AQ074886472234en-010501.pdf
+* https://loxwiki.atlassian.net/wiki/spaces/LOX/pages/1533935865/Danfoss+ECL+Comfort+210+310#DanfossECLComfort210%2F310-OffizielleModbusReferenzvonDanfoss
+* https://manualzz.com/doc/53382777/danfoss-ecl-comfort-210-310-operating-guide
+
 
 # Licensing
 This project is licensed under the GPLv3 license.
