@@ -12,10 +12,9 @@ externalDocs:
   url: http://swagger.io
 tags:
   - name: health
-    description: Everything about your Pets
-    externalDocs:
-      description: Find out more
-      url: http://swagger.io
+    description: Information about application's health
+  - name: system
+    description: Request ECL310 system details
 paths:
   /health:
     get:
@@ -30,6 +29,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetHealthResponse'          
+  /system:
+    get:
+      tags:
+        - system
+      summary: Get system info
+      operationId: getSystemInfo
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSystemInfoResponse'
 components:
   schemas:
     GetHealthResponse:
@@ -38,5 +50,51 @@ components:
       properties:
         status:
           type: string
+      required:
+        - status
+    GetSystemInfoResponse:
+      type: object
+      properties:
+        hardware_revision:
+          type: string
+        software_version:
+          type: integer
+        serial_number:
+          type: integer
+          format: int64
+        address_type:
+          type: string
+          enum:
+            - DHCP
+            - STATIC
+        ip_address:
+          type: string
+        netmask:
+          type: string
+        gateway:
+          type: string
+        application:
+          type: string
+        application_version:
+          type: string
+        production_year:
+          type: integer
+          minimum: 2000
+        production_week:
+          type: integer
+          minimum: 1
+          maximum: 53
+      required:
+        - hardware_revision
+        - software_version
+        - serial_number
+        - address_type
+        - ip_address
+        - netmask
+        - gateway
+        - application
+        - application_version
+        - production_year
+        - production_week
 #  requestBodies:
 

@@ -25,6 +25,7 @@ import (
 	"log"
 	"net/http"
 
+	wrapper "github.com/treblada/ecl310-rest/modbus"
 	api "github.com/treblada/ecl310-rest/services"
 )
 
@@ -32,14 +33,16 @@ func main() {
 	fmt.Println("ECL310 API starting")
 	config := parseCmdLine()
 	// Modbus TCP
-	modbusClient := modbus.TCPClient(fmt.Sprintf("%s:%d", config.eclHost, config.eclPort))
-
+	modbusClient := wrapper.NewZeroBasedAddressClientWrapper(modbus.TCPClient(fmt.Sprintf("%s:%d", config.eclHost, config.eclPort)))
 	log.Printf("ECL client ready.")
 
-	HealthService := api.NewHealthApiService(modbusClient)
+	HealthService := api.NewHealthApiService(&modbusClient)
 	HealthServiceController := openapi.NewHealthApiController(HealthService)
 
-	router := openapi.NewRouter(HealthServiceController)
+	SystemService := api.NewSystemApiService(&modbusClient)
+	SystemServiceController := openapi.NewSystemApiController(SystemService)
+
+	router := openapi.NewRouter(HealthServiceController, SystemServiceController)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
