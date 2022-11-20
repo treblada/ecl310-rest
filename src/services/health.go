@@ -30,9 +30,12 @@ type HealthApiService struct {
 	client wrapper.ZeroBasedAddressClientWrapper
 }
 
-func NewHealthApiService(client *wrapper.ZeroBasedAddressClientWrapper) openapi.HealthApiServicer {
+func NewHealthApiService(client wrapper.ZeroBasedAddressClientWrapper) openapi.HealthApiServicer {
+	if client == nil {
+		panic("No modbus client provided for health API service")
+	}
 	return &HealthApiService{
-		client: *client,
+		client: client,
 	}
 }
 

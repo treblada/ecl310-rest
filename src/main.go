@@ -30,11 +30,11 @@ import (
 )
 
 func main() {
-	fmt.Println("ECL310 API starting")
+	log.Println("ECL310 API starting")
 	config := parseCmdLine()
 	// Modbus TCP
-	modbusClient := wrapper.NewZeroBasedAddressClientWrapper(modbus.TCPClient(fmt.Sprintf("%s:%d", config.eclHost, config.eclPort)))
-	log.Printf("ECL client ready.")
+	modbusClient := wrapper.NewModbusClientWrapper(modbus.TCPClient(fmt.Sprintf("%s:%d", config.eclHost, config.eclPort)))
+	log.Println("ECL client ready.")
 
 	HealthService := api.NewHealthApiService(&modbusClient)
 	HealthServiceController := openapi.NewHealthApiController(HealthService)

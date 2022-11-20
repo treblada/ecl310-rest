@@ -18,60 +18,63 @@ package wrapper
 
 import "github.com/goburrow/modbus"
 
+type ZeroBasedAddressClientWrapper modbus.Client
+
 /*
 The MODbus client wrapper converts the 1-based addresses from the caller to 0-based
 addresses used in the modbus library.
 */
-type ZeroBasedAddressClientWrapper struct {
+type modbusClientWrapper struct {
+	ZeroBasedAddressClientWrapper
 	client modbus.Client
 }
 
-func NewZeroBasedAddressClientWrapper(c modbus.Client) ZeroBasedAddressClientWrapper {
-	return ZeroBasedAddressClientWrapper{
+func NewModbusClientWrapper(c modbus.Client) modbusClientWrapper {
+	return modbusClientWrapper{
 		client: c,
 	}
 }
 
-func (w *ZeroBasedAddressClientWrapper) ReadCoils(address, quantity uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) ReadCoils(address, quantity uint16) (results []byte, err error) {
 	return w.client.ReadCoils(address-1, quantity)
 }
 
-func (w *ZeroBasedAddressClientWrapper) ReadDiscreteInputs(address, quantity uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) ReadDiscreteInputs(address, quantity uint16) (results []byte, err error) {
 	return w.client.ReadDiscreteInputs(address-1, quantity)
 }
 
-func (w *ZeroBasedAddressClientWrapper) WriteSingleCoil(address, value uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) WriteSingleCoil(address, value uint16) (results []byte, err error) {
 	return w.client.WriteSingleCoil(address-1, value)
 }
 
-func (w *ZeroBasedAddressClientWrapper) WriteMultipleCoils(address, quantity uint16, value []byte) (results []byte, err error) {
+func (w *modbusClientWrapper) WriteMultipleCoils(address, quantity uint16, value []byte) (results []byte, err error) {
 	return w.client.WriteMultipleCoils(address-1, quantity, value)
 }
 
-func (w *ZeroBasedAddressClientWrapper) ReadInputRegisters(address, quantity uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) ReadInputRegisters(address, quantity uint16) (results []byte, err error) {
 	return w.client.ReadInputRegisters(address-1, quantity)
 }
 
-func (w *ZeroBasedAddressClientWrapper) ReadHoldingRegisters(address, quantity uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) ReadHoldingRegisters(address, quantity uint16) (results []byte, err error) {
 	return w.client.ReadHoldingRegisters(address-1, quantity)
 }
 
-func (w *ZeroBasedAddressClientWrapper) WriteSingleRegister(address, value uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) WriteSingleRegister(address, value uint16) (results []byte, err error) {
 	return w.client.WriteSingleRegister(address-1, value)
 }
 
-func (w *ZeroBasedAddressClientWrapper) WriteMultipleRegisters(address, quantity uint16, value []byte) (results []byte, err error) {
+func (w *modbusClientWrapper) WriteMultipleRegisters(address, quantity uint16, value []byte) (results []byte, err error) {
 	return w.client.WriteMultipleRegisters(address-1, quantity, value)
 }
 
-func (w *ZeroBasedAddressClientWrapper) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error) {
+func (w *modbusClientWrapper) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error) {
 	return w.client.ReadWriteMultipleRegisters(readAddress-1, readQuantity, writeAddress-1, writeQuantity, value)
 }
 
-func (w *ZeroBasedAddressClientWrapper) MaskWriteRegister(address, andMask, orMask uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) MaskWriteRegister(address, andMask, orMask uint16) (results []byte, err error) {
 	return w.client.MaskWriteRegister(address-1, andMask, orMask)
 }
 
-func (w *ZeroBasedAddressClientWrapper) ReadFIFOQueue(address uint16) (results []byte, err error) {
+func (w *modbusClientWrapper) ReadFIFOQueue(address uint16) (results []byte, err error) {
 	return w.client.ReadFIFOQueue(address - 1)
 }

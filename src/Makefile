@@ -24,6 +24,9 @@ all: build-linux build-darwin-amd64 build-darwin-arm build-windows
 
 build: build-linux
 
+test:
+	go test ./...
+
 run:
 	./${BINARY_NAME}
 

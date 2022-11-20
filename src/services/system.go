@@ -29,23 +29,24 @@ import (
 
 type SystemApiService struct {
 	openapi.SystemApiService
-	client *wrapper.ZeroBasedAddressClientWrapper
+	client wrapper.ZeroBasedAddressClientWrapper
 }
 
-func NewSystemApiService(client *wrapper.ZeroBasedAddressClientWrapper) openapi.SystemApiServicer {
+func NewSystemApiService(client wrapper.ZeroBasedAddressClientWrapper) openapi.SystemApiServicer {
+	if client == nil {
+		panic("No modbus client provided for System API service")
+	}
 	return &SystemApiService{
 		client: client,
 	}
 }
 
-func (s *SystemApiService) GetSystemInfo(ctx context.Context) (response openapi.ImplResponse, ferr error) {
+func (s *SystemApiService) GetSystemInfo(ctx context.Context) (response openapi.ImplResponse, funcErr error) {
 	defer func() {
 		if panic := recover(); panic != nil {
-			if _, ok := panic.(error); ok {
-				log.Printf("ECL communication error %w\n", panic.(error))
-			}
+			log.Printf("ECL communication error %v\n", panic)
 			response = openapi.Response(http.StatusBadGateway, "ECL communication error")
-			ferr = nil
+			funcErr = nil
 		}
 	}()
 
