@@ -37,10 +37,10 @@ func main() {
 	log.Println("ECL client ready.")
 
 	HealthService := api.NewHealthApiService(&modbusClient)
-	HealthServiceController := openapi.NewHealthApiController(HealthService)
+	HealthServiceController := openapi.NewHealthApiControllerWithErrorHandler(HealthService, api.ApiErrorHandler)
 
 	SystemService := api.NewSystemApiService(&modbusClient)
-	SystemServiceController := openapi.NewSystemApiController(SystemService)
+	SystemServiceController := openapi.NewSystemApiControllerWithErrorHandler(SystemService, api.ApiErrorHandler)
 
 	router := openapi.NewRouter(HealthServiceController, SystemServiceController)
 

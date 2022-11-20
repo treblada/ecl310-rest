@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/treblada/ecl310-rest/generated/openapi"
@@ -44,9 +43,12 @@ func NewSystemApiService(client wrapper.ZeroBasedAddressClientWrapper) openapi.S
 func (s *SystemApiService) GetSystemInfo(ctx context.Context) (response openapi.ImplResponse, funcErr error) {
 	defer func() {
 		if panic := recover(); panic != nil {
-			log.Printf("ECL communication error %v\n", panic)
-			response = openapi.Response(http.StatusBadGateway, "ECL communication error")
-			funcErr = nil
+			response = openapi.ImplResponse{}
+			if typedPanic, ok := panic.(error); ok {
+				funcErr = typedPanic
+			} else {
+				funcErr = fmt.Errorf("%v", panic)
+			}
 		}
 	}()
 
@@ -59,25 +61,23 @@ func (s *SystemApiService) GetSystemInfo(ctx context.Context) (response openapi.
 	var err error
 
 	if pnu19, err = s.client.ReadHoldingRegisters(19, 1); err != nil {
-		panic(fmt.Errorf("PNU19; %w", err))
+		panic(NewApiError(http.StatusBadGateway, "PNU19", err))
 	}
 	if pnu34_37, err = s.client.ReadHoldingRegisters(34, 4); err != nil {
-		panic(fmt.Errorf("PNU34-37; %w", err))
+		panic(NewApiError(http.StatusBadGateway, "PNU34+4", err))
 	}
 	if pnu258, err = s.client.ReadHoldingRegisters(258, 1); err != nil {
-		panic(err)
+		panic(NewApiError(http.StatusBadGateway, "PNU258", err))
 	}
 	if pnu278_289, err = s.client.ReadHoldingRegisters(278, 12); err != nil {
-		panic(err)
+		panic(NewApiError(http.StatusBadGateway, "PNU278+12", err))
 	}
 	if pnu2060_2063, err = s.client.ReadHoldingRegisters(2060, 4); err != nil {
-		panic(err)
+		panic(NewApiError(http.StatusBadGateway, "PNU2060+4", err))
 	}
 	if pnu2099, err = s.client.ReadHoldingRegisters(2099, 1); err != nil {
-		panic(err)
+		panic(NewApiError(http.StatusBadGateway, "PNU2099", err))
 	}
-
-	log.Println(pnu34_37)
 
 	body := openapi.GetSystemInfoResponse{
 		HardwareRevision: fmt.Sprintf("087H%d", binary.BigEndian.Uint16(pnu19)),

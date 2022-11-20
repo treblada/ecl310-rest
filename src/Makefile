@@ -4,7 +4,7 @@ OPENAPI_JAR=../openapi-generator-cli.jar
 OPENAPI_VER=6.2.1
 OPENAPI=java -jar ${OPENAPI_JAR}
 OPENAPI_SPEC=ecl310-rest-openapi.yaml
-OPENAPI_DIR=openapi
+OPENAPI_DIR=generated
 
 .DEFAULT_GOAL=all
 
@@ -64,8 +64,8 @@ openapi-clean:
 	rm -fr $(OPENAPI_DIR)/.openapi-generator
 	rm -fr $(OPENAPI_DIR)/api
 	rm -fr $(OPENAPI_DIR)/docs
-	rm -fr $(OPENAPI_DIR)/go
 	rm -fr $(OPENAPI_DIR)/Dockerfile
 	rm -fr $(OPENAPI_DIR)/go.mod
 	rm -fr $(OPENAPI_DIR)/main.go
 	rm -fr $(OPENAPI_DIR)/README.md
+	find $(OPENAPI_DIR)/openapi -maxdepth 1 \! -name "controllers.go" -exec rm -fv {} \;
