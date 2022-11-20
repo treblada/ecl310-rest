@@ -51,10 +51,11 @@ openapi-validate:
 openapi-generate: openapi-clean
 	$(OPENAPI) generate --input-spec $(OPENAPI_SPEC) \
 		--generator-name go-server \
-		--output openapi \
+		--output generated \
+		--additional-properties=sourceFolder=openapi \
 		--additional-properties=isGoSubmodule=true \
 		--additional-properties=outputAsLibrary=true
-	goimports -w openapi/go/*.go
+	goimports -w generated/openapi/*.go
 
 openapi-clean:
 	rm -fr $(OPENAPI_DIR)/.openapi-generator

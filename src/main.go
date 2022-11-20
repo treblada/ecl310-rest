@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/goburrow/modbus"
-	openapi "github.com/treblada/ecl310-rest/openapi/go"
+	"github.com/treblada/ecl310-rest/generated/openapi"
 
 	"log"
 	"net/http"

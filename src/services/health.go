@@ -21,8 +21,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/treblada/ecl310-rest/generated/openapi"
 	wrapper "github.com/treblada/ecl310-rest/modbus"
-	openapi "github.com/treblada/ecl310-rest/openapi/go"
 )
 
 type HealthApiService struct {

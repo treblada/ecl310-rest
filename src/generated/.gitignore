@@ -1,4 +1,4 @@
 .openapi-generator/
 api/
 docs/
-go/
+openapi/
