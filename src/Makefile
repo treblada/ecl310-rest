@@ -1,12 +1,15 @@
+SHELL=/bin/bash
 BINARY_NAME=ecl310-rest
 BIN_DIR=../bin
 OPENAPI_JAR=../openapi-generator-cli.jar
 OPENAPI_VER=6.2.1
 OPENAPI=java -jar ${OPENAPI_JAR}
 OPENAPI_SPEC=ecl310-rest-openapi.yaml
-OPENAPI_DIR=generated
+GENERATED_DIR=generated
 
 .DEFAULT_GOAL=all
+
+.PHONY: openapi-clean openapi-generate xx-openapi-generate openapi-validate all build test run install list-arch
 
 build-darwin-amd64:
 	GOARCH=amd64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-darwin .
@@ -48,10 +51,12 @@ openapi-download:
 openapi-config-help:
 	$(OPENAPI) config-help --generator-name go
 
-openapi-validate:
-	$(OPENAPI) validate --input-spec $(OPENAPI_SPEC)
+openapi-generate: generated/api/openapi.yaml
 
-openapi-generate: openapi-clean
+openapi-validate:
+	$(OPENAPI) validate --input-spec $(OPENAPI_SPEC) --recommend
+
+xx-openapi-generate: openapi-validate openapi-clean
 	$(OPENAPI) generate --input-spec $(OPENAPI_SPEC) \
 		--generator-name go-server \
 		--output generated \
@@ -61,11 +66,13 @@ openapi-generate: openapi-clean
 	goimports -w generated/openapi/*.go
 
 openapi-clean:
-	rm -fr $(OPENAPI_DIR)/.openapi-generator
-	rm -fr $(OPENAPI_DIR)/api
-	rm -fr $(OPENAPI_DIR)/docs
-	rm -fr $(OPENAPI_DIR)/Dockerfile
-	rm -fr $(OPENAPI_DIR)/go.mod
-	rm -fr $(OPENAPI_DIR)/main.go
-	rm -fr $(OPENAPI_DIR)/README.md
-	find $(OPENAPI_DIR)/openapi -maxdepth 1 \! -name "controllers.go" -exec rm -fv {} \;
+	rm -frv $(GENERATED_DIR)/.openapi-generator
+	rm -frv $(GENERATED_DIR)/api
+	rm -frv $(GENERATED_DIR)/docs
+	rm -frv $(GENERATED_DIR)/Dockerfile
+	rm -frv $(GENERATED_DIR)/go.mod
+	rm -frv $(GENERATED_DIR)/main.go
+	rm -frv $(GENERATED_DIR)/README.md
+	find $(GENERATED_DIR)/openapi -maxdepth 1 -type f \! -name "controllers.go" -exec rm -fv {} \;
+
+generated/api/openapi.yaml: ecl310-rest-openapi.yaml | xx-openapi-generate
