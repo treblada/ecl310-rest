@@ -43,12 +43,7 @@ func NewSystemApiService(client wrapper.ZeroBasedAddressClientWrapper) openapi.S
 func (s *SystemApiService) GetSystemInfo(ctx context.Context) (response openapi.ImplResponse, funcErr error) {
 	defer func() {
 		if panic := recover(); panic != nil {
-			response = openapi.ImplResponse{}
-			if typedPanic, ok := panic.(error); ok {
-				funcErr = typedPanic
-			} else {
-				funcErr = fmt.Errorf("%v", panic)
-			}
+			response, funcErr = handlePanic(panic)
 		}
 	}()
 
@@ -129,4 +124,81 @@ func decodeApplicationName(pnu2060_2063 []byte) string {
 	appType := binary.BigEndian.Uint16(pnu2060_2063[2:4])
 	appSubType := binary.BigEndian.Uint16(pnu2060_2063[4:6])
 	return fmt.Sprintf("%v%d.%d", appPrefix, appType, appSubType)
+}
+
+func (s *SystemApiService) GetSystemCircuit(ctx context.Context, circuitNo int32) (response openapi.ImplResponse, funcErr error) {
+	defer func() {
+		if panic := recover(); panic != nil {
+			response, funcErr = handlePanic(panic)
+		}
+	}()
+
+	if circuitNo < 1 || circuitNo > 3 {
+		return openapi.ImplResponse{}, NewApiError(400, "Circuit number must be in [1-3]", nil)
+	}
+
+	var circMode []byte
+	var circState []byte
+	var err error
+
+	modeAddr := 4200 + circuitNo
+	stateAddr := 4210 + circuitNo
+
+	if circMode, err = s.client.ReadHoldingRegisters(uint16(modeAddr), 1); err != nil {
+		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("PNU%d", modeAddr), err))
+	}
+	if circState, err = s.client.ReadHoldingRegisters(uint16(stateAddr), 1); err != nil {
+		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("PNU%d", stateAddr), err))
+	}
+
+	body := openapi.GetSystemCircuitResponse{
+		Mode:   GetCircuitMode(binary.BigEndian.Uint16(circMode)).String(),
+		Status: GetCircuitState(binary.BigEndian.Uint16(circState)).String(),
+	}
+	return openapi.Response(200, body), nil
+}
+
+func (s *SystemApiService) GetSystemCircuits(ctx context.Context) (response openapi.ImplResponse, funcErr error) {
+	defer func() {
+		if panic := recover(); panic != nil {
+			response, funcErr = handlePanic(panic)
+		}
+	}()
+
+	var circModes []byte
+	var circStates []byte
+	var err error
+
+	if circModes, err = s.client.ReadHoldingRegisters(uint16(4201), 3); err != nil {
+		panic(NewApiError(http.StatusBadGateway, "PNU4201+3", err))
+	}
+	if circStates, err = s.client.ReadHoldingRegisters(uint16(4211), 3); err != nil {
+		panic(NewApiError(http.StatusBadGateway, "PNU4211+3", err))
+	}
+
+	body := openapi.GetSystemCircuitsResponse{
+		Heating: openapi.GetSystemCircuitResponse{
+			Mode:   GetCircuitMode(binary.BigEndian.Uint16(circModes[:2])).String(),
+			Status: GetCircuitState(binary.BigEndian.Uint16(circStates[:2])).String(),
+		},
+		WarmWater: openapi.GetSystemCircuitResponse{
+			Mode:   GetCircuitMode(binary.BigEndian.Uint16(circModes[2:4])).String(),
+			Status: GetCircuitState(binary.BigEndian.Uint16(circStates[2:4])).String(),
+		},
+		Circuit3: openapi.GetSystemCircuitResponse{
+			Mode:   GetCircuitMode(binary.BigEndian.Uint16(circModes[4:6])).String(),
+			Status: GetCircuitState(binary.BigEndian.Uint16(circStates[4:6])).String(),
+		},
+	}
+	return openapi.Response(200, body), nil
+}
+
+func handlePanic(panic any) (response openapi.ImplResponse, funcErr error) {
+	response = openapi.ImplResponse{}
+	if typedPanic, ok := panic.(error); ok {
+		funcErr = typedPanic
+	} else {
+		funcErr = fmt.Errorf("%v", panic)
+	}
+	return
 }

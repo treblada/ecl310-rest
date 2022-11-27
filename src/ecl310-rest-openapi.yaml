@@ -29,7 +29,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetHealthResponse'          
-  /system:
+  /system/info:
     get:
       tags:
         - system
@@ -42,6 +42,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetSystemInfoResponse'
+  /system/circuits:
+    get:
+      tags:
+        - system
+      summary: Get all circuits' states.
+      operationId: getSystemCircuits
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSystemCircuitsResponse'
+  /system/circuits/{circuitNo}:
+    get:
+      tags:
+        - system
+      summary: Get individual circuit's state.
+      operationId: getSystemCircuit
+      parameters:
+        - in: path
+          name: circuitNo
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3
+          required: true
+          description: Circuit ID. Circuit 1 is the heating, circuit 2 warm water. Circuit 3 is unknown but theoretically possible.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSystemCircuitResponse'
 components:
   schemas:
     GetHealthResponse:
@@ -96,5 +131,37 @@ components:
         - application_version
         - production_year
         - production_week
+    GetSystemCircuitsResponse:
+      type: object
+      properties:
+        heating:
+          $ref: '#/components/schemas/GetSystemCircuitResponse'
+        warm_water:
+          $ref: '#/components/schemas/GetSystemCircuitResponse'
+        circuit3:
+          $ref: '#/components/schemas/GetSystemCircuitResponse'
+      required:
+        - heating
+        - warm_water
+    GetSystemCircuitResponse:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - MANUAL                # 0
+            - SCHEDULED             # 1
+            - CONSTANT_COMFORT_TEMP # 2
+            - CONSTANT_SETBACK_TEMP # 3
+            - FROST_PROTECTION      # 4
+        status:
+          type: string
+          enum:
+            - SETBACK     # 0
+            - PRE_COMFORT # 1
+            - COMFORT     # 2
+            - PRE_SETBACK # 3
+      required:
+        - mode
+        - status
 #  requestBodies:
-

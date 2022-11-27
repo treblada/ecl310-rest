@@ -19,6 +19,7 @@ package api_test
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/treblada/ecl310-rest/generated/openapi"
@@ -27,7 +28,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestGetSystemInfo_success(t *testing.T) {
+func TestGetSystemInfo__success(t *testing.T) {
 	mock := &mocks.ClientMock{
 		ReadHoldingRegistersMock: func(address, quantity uint16) ([]byte, error) {
 			switch address {
@@ -67,8 +68,7 @@ func TestGetSystemInfo_success(t *testing.T) {
 	response, err := service.GetSystemInfo(context.TODO())
 	assert.NilError(t, err)
 	assert.Equal(t, 200, response.Code)
-	body, ok := response.Body.(openapi.GetSystemInfoResponse)
-	assert.Assert(t, ok)
+	body := response.Body.(openapi.GetSystemInfoResponse)
 	assert.Equal(t, "087H42", body.HardwareRevision)
 	assert.Equal(t, int32(1<<8+3), body.SoftwareVersion)
 	assert.Equal(t, int64(2<<16+42), body.SerialNumber)
@@ -89,9 +89,109 @@ func TestGetSystemInfo__failure(t *testing.T) {
 		},
 	}
 	service := api.NewSystemApiService(mock)
-	response, err := service.GetSystemInfo(context.TODO())
+	_, err := service.GetSystemInfo(context.TODO())
+	apiErr, ok := err.(*api.ApiError)
+	assert.Assert(t, ok, "%T", err)
+	assert.Check(t, apiErr.Code == 502)
+}
+
+func TestGetSystemCircuit__failure(t *testing.T) {
+	mock := &mocks.ClientMock{
+		ReadHoldingRegistersMock: func(address, quantity uint16) ([]byte, error) {
+			return nil, errors.New("Mock error")
+		},
+	}
+	service := api.NewSystemApiService(mock)
+	_, err := service.GetSystemCircuit(context.TODO(), 1)
+	apiErr, ok := err.(*api.ApiError)
+	assert.Assert(t, ok, "%T", err)
+	assert.Check(t, apiErr.Code == http.StatusBadGateway)
+}
+
+func TestGetSystemCircuit__success(t *testing.T) {
+	mock := &mocks.ClientMock{
+		ReadHoldingRegistersMock: func(address, quantity uint16) ([]byte, error) {
+			assert.Check(t, quantity == 1)
+			switch address {
+			case 4201:
+				return []byte{0, 0}, nil
+			case 4211:
+				return []byte{0, 1}, nil
+			default:
+				t.Errorf("Unexpected address %d", address)
+				t.FailNow()
+				return nil, errors.New("Test failure")
+			}
+		},
+	}
+	service := api.NewSystemApiService(mock)
+	response, err := service.GetSystemCircuit(context.TODO(), 1)
 	assert.NilError(t, err)
-	assert.Equal(t, 502, response.Code)
-	_, ok := response.Body.(string)
-	assert.Assert(t, ok)
+	assert.Check(t, http.StatusOK == response.Code)
+	body := response.Body.(openapi.GetSystemCircuitResponse)
+	assert.Check(t, body.Mode == api.Manual.String())
+	assert.Check(t, body.Status == api.PreComfort.String())
+}
+
+func TestGetSystemCircuit__invalidRequestParam(t *testing.T) {
+	mock := &mocks.ClientMock{
+		ReadHoldingRegistersMock: func(address, quantity uint16) ([]byte, error) {
+			t.Error("Should not have been called")
+			t.FailNow()
+			return nil, errors.New("Failure")
+		},
+	}
+	service := api.NewSystemApiService(mock)
+	var err error
+	var apiErr *api.ApiError
+
+	_, err = service.GetSystemCircuit(context.TODO(), 0)
+	apiErr = err.(*api.ApiError)
+	assert.Check(t, apiErr.Code == http.StatusBadRequest)
+
+	_, err = service.GetSystemCircuit(context.TODO(), 4)
+	apiErr = err.(*api.ApiError)
+	assert.Check(t, apiErr.Code == http.StatusBadRequest)
+}
+
+func TestGetSystemCircuits__failure(t *testing.T) {
+	mock := &mocks.ClientMock{
+		ReadHoldingRegistersMock: func(address, quantity uint16) ([]byte, error) {
+			return nil, errors.New("Mock error")
+		},
+	}
+	service := api.NewSystemApiService(mock)
+	_, err := service.GetSystemCircuits(context.TODO())
+	apiErr, ok := err.(*api.ApiError)
+	assert.Assert(t, ok, "%T", err)
+	assert.Check(t, apiErr.Code == http.StatusBadGateway)
+}
+
+func TestGetSystemCircuits__success(t *testing.T) {
+	mock := &mocks.ClientMock{
+		ReadHoldingRegistersMock: func(address, quantity uint16) ([]byte, error) {
+			assert.Check(t, quantity == 3)
+			switch address {
+			case 4201:
+				return []byte{0, 2, 0, 3, 0, 4}, nil
+			case 4211:
+				return []byte{0, 1, 0, 2, 0, 3}, nil
+			default:
+				t.Errorf("Unexpected address %d", address)
+				t.FailNow()
+				return nil, errors.New("Test failure")
+			}
+		},
+	}
+	service := api.NewSystemApiService(mock)
+	response, err := service.GetSystemCircuits(context.TODO())
+	assert.NilError(t, err)
+	assert.Check(t, response.Code == http.StatusOK)
+	body := response.Body.(openapi.GetSystemCircuitsResponse)
+	assert.Check(t, body.Heating.Mode == api.ConstantComfortTemp.String())
+	assert.Check(t, body.Heating.Status == api.PreComfort.String())
+	assert.Check(t, body.WarmWater.Mode == api.ConstantSetbackTemp.String())
+	assert.Check(t, body.WarmWater.Status == api.Comfort.String())
+	assert.Check(t, body.Circuit3.Mode == api.FrostProtection.String())
+	assert.Check(t, body.Circuit3.Status == api.PreSetback.String())
 }
