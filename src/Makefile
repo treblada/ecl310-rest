@@ -9,7 +9,7 @@ GENERATED_DIR=generated
 
 .DEFAULT_GOAL=all
 
-.PHONY: openapi-clean openapi-generate xx-openapi-generate openapi-validate all build test run install list-arch
+.PHONY: openapi-clean openapi-generate xx-openapi-generate openapi-validate openapi-download all build test run install list-arch
 
 build-darwin-amd64:
 	GOARCH=amd64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-darwin .
@@ -25,7 +25,7 @@ build-linux:
 
 all: build-linux build-darwin-amd64 build-darwin-arm build-windows
 
-build: build-linux
+build: openapi-generate build-linux
 
 test:
 	go test ./...
@@ -53,10 +53,9 @@ openapi-config-help:
 
 openapi-generate: generated/api/openapi.yaml
 
-openapi-validate:
-	$(OPENAPI) validate --input-spec $(OPENAPI_SPEC) --recommend
-
-xx-openapi-generate: openapi-validate openapi-clean
+generated/api/openapi.yaml: ecl310-rest-openapi.yaml
+	$(MAKE) openapi-validate
+	$(MAKE) openapi-clean
 	$(OPENAPI) generate --input-spec $(OPENAPI_SPEC) \
 		--generator-name go-server \
 		--output generated \
@@ -64,6 +63,9 @@ xx-openapi-generate: openapi-validate openapi-clean
 		--additional-properties=isGoSubmodule=true \
 		--additional-properties=outputAsLibrary=true
 	goimports -w generated/openapi/*.go
+
+openapi-validate:
+	$(OPENAPI) validate --input-spec $(OPENAPI_SPEC) --recommend
 
 openapi-clean:
 	rm -frv $(GENERATED_DIR)/.openapi-generator
@@ -74,5 +76,3 @@ openapi-clean:
 	rm -frv $(GENERATED_DIR)/main.go
 	rm -frv $(GENERATED_DIR)/README.md
 	find $(GENERATED_DIR)/openapi -maxdepth 1 -type f \! -name "controllers.go" -exec rm -fv {} \;
-
-generated/api/openapi.yaml: ecl310-rest-openapi.yaml | xx-openapi-generate

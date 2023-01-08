@@ -6,7 +6,7 @@ info:
   license:
     name: GPL v3
     url: https://www.gnu.org/licenses/gpl-3.0.en.html
-  version: 0.1
+  version: "0.1"
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -77,6 +77,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetSystemCircuitResponse'
+  /heatcurve/{circuitNo}:
+    get:
+      tags:
+        - system
+      summary: Get defining points for a heat curve.
+      operationId: getHeatCurve
+      parameters:
+        - in: path
+          name: circuitNo
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3
+          required: true
+          description: Circuit ID. Circuit 1 is the heating, circuit 2 warm water. Circuit 3 is unknown but theoretically possible.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHeatCurveResponse'
 components:
   schemas:
     GetHealthResponse:
@@ -164,4 +186,40 @@ components:
       required:
         - mode
         - status
+    GetHeatCurveResponse:
+      type: object
+      properties:
+        slope:
+          type: number
+          maximum: 0
+          description: Heat curve's slope, mathematically correct, i.e. a "falling" like has a negative slope
+        minFlowTemp:
+          type: integer
+          minimum: 10
+          maximum: 150
+          description: Lower limit for the heating flow.
+        maxFlowTemp:
+          type: integer
+          minimum: 10
+          maximum: 150
+        curvePoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowTempPoint'
+      required:
+        - slope
+        - minFlowTemp
+        - maxFlowTemp
+        - curvePoints
+    FlowTempPoint:
+      type: object
+      properties:
+        outdoorTemp:
+          type: integer
+          minimum: -30
+          maximum: 15
+        flowTemp:
+          type: integer
+          minimum: 10
+          maximum: 150
 #  requestBodies:

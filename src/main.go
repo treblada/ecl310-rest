@@ -32,6 +32,7 @@ import (
 func main() {
 	log.Println("ECL310 API starting")
 	config := parseCmdLine()
+	log.Printf("Working with remote instance %s:%d\n", config.eclHost, config.eclPort)
 	// Modbus TCP
 	modbusClient := wrapper.NewModbusClientWrapper(modbus.TCPClient(fmt.Sprintf("%s:%d", config.eclHost, config.eclPort)))
 	log.Println("ECL client ready.")
