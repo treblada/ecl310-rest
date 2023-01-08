@@ -43,7 +43,10 @@ func main() {
 	SystemService := api.NewSystemApiService(&modbusClient)
 	SystemServiceController := openapi.NewSystemApiControllerWithErrorHandler(SystemService, api.ApiErrorHandler)
 
-	router := openapi.NewRouter(HealthServiceController, SystemServiceController)
+	HeatingService := api.NewHeatingApiService(&modbusClient)
+	HeatingServiceController := openapi.NewHeatingApiControllerWithErrorHandler(HeatingService, api.ApiErrorHandler)
+
+	router := openapi.NewRouter(HealthServiceController, SystemServiceController, HeatingServiceController)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

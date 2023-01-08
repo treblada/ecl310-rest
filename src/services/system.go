@@ -170,10 +170,13 @@ func (s *SystemApiService) GetSystemCircuits(ctx context.Context) (response open
 	var circStates []byte
 	var err error
 
-	if circModes, err = s.client.ReadHoldingRegisters(4201, 2); err != nil {
+	var modeBaseAddr uint16 = 4200
+	var stateBaseAddr uint16 = 4210
+
+	if circModes, err = s.client.ReadHoldingRegisters(modeBaseAddr+1, 2); err != nil {
 		panic(NewApiError(http.StatusBadGateway, "PNU4201+2", err))
 	}
-	if circStates, err = s.client.ReadHoldingRegisters(4211, 2); err != nil {
+	if circStates, err = s.client.ReadHoldingRegisters(stateBaseAddr+1, 2); err != nil {
 		panic(NewApiError(http.StatusBadGateway, "PNU4211+2", err))
 	}
 
@@ -189,8 +192,8 @@ func (s *SystemApiService) GetSystemCircuits(ctx context.Context) (response open
 	// this should be a pointer, unfortunatelly the openapi-generator does not seem to support it
 	circ3 := openapi.GetSystemCircuitResponse{}
 
-	if circModes, err = s.client.ReadHoldingRegisters(4203, 1); err == nil {
-		if circStates, err = s.client.ReadHoldingRegisters(4213, 1); err == nil {
+	if circModes, err = s.client.ReadHoldingRegisters(modeBaseAddr+3, 1); err == nil {
+		if circStates, err = s.client.ReadHoldingRegisters(stateBaseAddr+3, 1); err == nil {
 			circ3 = openapi.GetSystemCircuitResponse{
 				Mode:   GetCircuitMode(binary.BigEndian.Uint16(circModes[:2])).String(),
 				Status: GetCircuitState(binary.BigEndian.Uint16(circStates[:2])).String(),
@@ -209,63 +212,4 @@ func (s *SystemApiService) GetSystemCircuits(ctx context.Context) (response open
 	}
 
 	return openapi.Response(200, body), nil
-}
-
-func (s *SystemApiService) GetHeatCurve(ctx context.Context, circuitNo int32) (response openapi.ImplResponse, funcErr error) {
-	defer func() {
-		if panic := recover(); panic != nil {
-			response, funcErr = handlePanic(panic)
-		}
-	}()
-
-	if circuitNo < 1 || circuitNo > 3 {
-		panic(NewApiError(http.StatusBadRequest, fmt.Sprintf("Invalid circuit number %d, not in [1,3]", circuitNo), nil))
-	}
-
-	var slope []byte
-	var minMax []byte
-	var temperature []byte
-	var slopePnu uint16 = 10175 + uint16(circuitNo)*1000
-	var minMaxPnu uint16 = 10177 + uint16(circuitNo)*1000
-	var temperaturePnu uint16 = 10400 + uint16(circuitNo)*1000
-
-	var err error
-
-	if slope, err = s.client.ReadHoldingRegisters(slopePnu, 1); err != nil {
-		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("PNU%d", slopePnu), err))
-	}
-	if minMax, err = s.client.ReadHoldingRegisters(minMaxPnu, 2); err != nil {
-		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("PNU%d+2", minMaxPnu), err))
-	}
-	if temperature, err = s.client.ReadHoldingRegisters(temperaturePnu, 6); err != nil {
-		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("PNU%d+6", temperaturePnu), err))
-	}
-
-	var outdoorTemps = []int32{-30, -15, -5, 0, 5, 15}
-	var curvePoints [6]openapi.FlowTempPoint
-	for i := 0; i < 6; i++ {
-		curvePoints[i] = openapi.FlowTempPoint{
-			OutdoorTemp: outdoorTemps[i],
-			FlowTemp:    int32(binary.BigEndian.Uint16(temperature[i*2 : i*2+2])),
-		}
-	}
-
-	body := openapi.GetHeatCurveResponse{
-		Slope:       float32(binary.BigEndian.Uint16(slope)) / -10.0,
-		MinFlowTemp: int32(binary.BigEndian.Uint16(minMax[0:2])),
-		MaxFlowTemp: int32(binary.BigEndian.Uint16(minMax[2:4])),
-		CurvePoints: curvePoints[:],
-	}
-
-	return openapi.Response(200, body), nil
-}
-
-func handlePanic(panic any) (response openapi.ImplResponse, funcErr error) {
-	response = openapi.ImplResponse{}
-	if typedPanic, ok := panic.(error); ok {
-		funcErr = typedPanic
-	} else {
-		funcErr = fmt.Errorf("%v", panic)
-	}
-	return
 }

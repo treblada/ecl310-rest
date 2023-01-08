@@ -45,3 +45,16 @@ func NewSystemApiControllerWithErrorHandler(s SystemApiServicer, h ErrorHandler,
 
 	return controller
 }
+
+func NewHeatingApiControllerWithErrorHandler(s HeatingApiServicer, h ErrorHandler, opts ...HeatingApiOption) Router {
+	controller := &HeatingApiController{
+		service:      s,
+		errorHandler: h,
+	}
+
+	for _, opt := range opts {
+		opt(controller)
+	}
+
+	return controller
+}

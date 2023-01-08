@@ -15,6 +15,8 @@ tags:
     description: Information about application's health
   - name: system
     description: Request ECL310 system details
+  - name: heating
+    description: Details concerning the heating circuits
 paths:
   /health:
     get:
@@ -80,7 +82,7 @@ paths:
   /heatcurve/{circuitNo}:
     get:
       tags:
-        - system
+        - heating
       summary: Get defining points for a heat curve.
       operationId: getHeatCurve
       parameters:
