@@ -17,7 +17,6 @@ ecl310-rest. If not, see <https://www.gnu.org/licenses/>.
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -180,20 +179,9 @@ func (s *HeatingApiService) SetHeatCurveByPoints(ctx context.Context, circuitNo 
 
 	tempCurvePointsPnu := getTempCurvePointsPnu(circuitNo)
 
-	oldTempCurvePointsBytes := s.readPnu(tempCurvePointsPnu, 6)
-	newTempCurvePointsBytes := make([]byte, 12)
-	copy(newTempCurvePointsBytes, oldTempCurvePointsBytes)
-
 	for _, curvePoint := range values.CurvePoints {
 		i := validOutdoorTemps.indexOf(curvePoint.OutdoorTemp)
-		binary.BigEndian.PutUint16(newTempCurvePointsBytes[i*2:i*2+2], uint16(curvePoint.FlowTemp))
-	}
-
-	if !bytes.Equal(oldTempCurvePointsBytes, newTempCurvePointsBytes) {
-		log.Printf("Updating heat curve points to %v (%v -> %v)\n", values.CurvePoints, oldTempCurvePointsBytes, newTempCurvePointsBytes)
-		if _, err := s.client.WriteMultipleRegisters(tempCurvePointsPnu, 6, newTempCurvePointsBytes); err != nil {
-			panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("Cannot write curve points %v to PNU%d:%d", newTempCurvePointsBytes, tempCurvePointsPnu, 6), err))
-		}
+		s.updateSinglePnu(tempCurvePointsPnu+uint16(i), uint16(curvePoint.FlowTemp), fmt.Sprintf("%d outdoor temp", curvePoint.OutdoorTemp))
 	}
 
 	return s.GetHeatCurve(ctx, circuitNo)
@@ -210,7 +198,7 @@ func (s *HeatingApiService) readPnu(pnu uint16, quantity uint16) []byte {
 func (s *HeatingApiService) updateSinglePnu(pnu uint16, newValue uint16, label string) {
 	oldValue := binary.BigEndian.Uint16(s.readPnu(pnu, 1))
 	if oldValue != newValue {
-		log.Printf("Updating %s: PNU%d: %d -> %d\n", label, pnu, oldValue, newValue)
+		log.Printf("Updating %s: PNU%d:1 %d -> %d\n", label, pnu, oldValue, newValue)
 		if _, err := s.client.WriteSingleRegister(pnu, newValue); err != nil {
 			panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("Error writing %s PNU%d=%d", label, pnu, newValue), err))
 		}

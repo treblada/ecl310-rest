@@ -285,7 +285,6 @@ components:
           minimum: 10
           maximum: 150
       required:
-        - outdoorTemp
         - flowTemp
     SetHeatCurveBySlopeRequest:
       type: object
