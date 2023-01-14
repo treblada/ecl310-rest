@@ -101,6 +101,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetHeatCurveResponse'
+  /heatcurve/{circuitNo}/slope:
+    post:
+      tags:
+        - heating
+      summary: Define a new heating curve by definining new slope and possibly a new min/max value.
+      description: The values for the curve will be set in the controller which will result in a new set of values.
+      operationId: setHeatCurveBySlope
+      parameters:
+        - in: path
+          name: circuitNo
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3
+          required: true
+          description: Circuit ID. Circuit 1 is the heating, circuit 2 warm water. Circuit 3 is unknown but theoretically possible.
+      requestBody:
+        description: Heating slope definition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetHeatCurveBySlopeRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHeatCurveResponse'
+  /heatcurve/{circuitNo}/points:
+    post:
+      tags:
+        - heating
+      summary: Define a new heating curve by definining individual curve points.
+      operationId: setHeatCurveByPoints
+      parameters:
+        - in: path
+          name: circuitNo
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3
+          required: true
+          description: Circuit ID. Circuit 1 is the heating, circuit 2 warm water. Circuit 3 is unknown but theoretically possible.
+      requestBody:
+        description: Heating curve definition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetHeatCurveByPointsRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHeatCurveResponse'
 components:
   schemas:
     GetHealthResponse:
@@ -193,8 +252,9 @@ components:
       properties:
         slope:
           type: number
-          maximum: 0
-          description: Heat curve's slope, mathematically correct, i.e. a "falling" like has a negative slope
+          maximum: -0.1
+          minimum: -10
+          description: Heat curve's slope, mathematically correct, i.e. a "falling" line has a negative slope
         minFlowTemp:
           type: integer
           minimum: 10
@@ -224,4 +284,43 @@ components:
           type: integer
           minimum: 10
           maximum: 150
-#  requestBodies:
+      required:
+        - outdoorTemp
+        - flowTemp
+    SetHeatCurveBySlopeRequest:
+      type: object
+      properties:
+        slope:
+          type: number
+          maximum: -0.1
+          minimum: -10
+          description: Heat curve's slope, mathematically correct, i.e. a "falling" line has a negative slope
+        minFlowTemp:
+          type: integer
+          minimum: 10
+          maximum: 150
+          description: Lower limit for the heating flow.
+        maxFlowTemp:
+          type: integer
+          minimum: 10
+          maximum: 150
+      required:
+        - slope
+    SetHeatCurveByPointsRequest:
+      type: object
+      properties:
+        minFlowTemp:
+          type: integer
+          minimum: 10
+          maximum: 150
+          description: Lower limit for the heating flow.
+        maxFlowTemp:
+          type: integer
+          minimum: 10
+          maximum: 150
+        curvePoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowTempPoint'
+      required:
+        - curvePoints

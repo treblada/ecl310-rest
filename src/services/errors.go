@@ -26,7 +26,11 @@ type ApiError struct {
 }
 
 func (err *ApiError) Error() string {
-	return fmt.Sprintf("HTTP %d; %s; %s", err.Code, err.Message, err.Cause.Error())
+	var causeMessage string = ""
+	if err.Cause != nil {
+		causeMessage = fmt.Sprintf("; %s", err.Cause.Error())
+	}
+	return fmt.Sprintf("HTTP %d; %s%s", err.Code, err.Message, causeMessage)
 }
 
 func NewApiError(code int, message string, cause error) *ApiError {

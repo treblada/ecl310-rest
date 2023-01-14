@@ -17,7 +17,6 @@ ecl310-rest. If not, see <https://www.gnu.org/licenses/>.
 package api
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -34,8 +33,8 @@ func ApiErrorHandler(w http.ResponseWriter, r *http.Request, err error, result *
 		// Modbus communication error
 		openapi.EncodeJSONResponse(err.Error(), func(i int) *int { return &i }(http.StatusBadGateway), w)
 	} else if typedErr, ok := err.(*ApiError); ok {
-		log.Println(err.Error())
-		openapi.EncodeJSONResponse(fmt.Sprintf("%s; %s", typedErr.Message, typedErr.Cause.Error()), &typedErr.Code, w)
+		log.Printf("%v\n", err)
+		openapi.EncodeJSONResponse(typedErr.Message, &typedErr.Code, w)
 	} else {
 		openapi.DefaultErrorHandler(w, r, err, result)
 	}

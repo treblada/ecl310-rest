@@ -89,3 +89,65 @@ func TestGetHeatCurve__failWithCircuit4(t *testing.T) {
 	assert.Assert(t, ok, "%T", err)
 	assert.Check(t, apiErr.Code == http.StatusBadRequest)
 }
+
+func TestSetHeatCurveBySlope__failInvalidSlope(t *testing.T) {
+	mock := &mocks.ClientMock{}
+	service := api.NewHeatingApiService(mock)
+	values := openapi.SetHeatCurveBySlopeRequest{
+		Slope:       0,
+		MinFlowTemp: 10,
+		MaxFlowTemp: 150,
+	}
+	_, err := service.SetHeatCurveBySlope(context.TODO(), 1, values)
+	assert.ErrorContains(t, err, "slope")
+	apiErr, ok := err.(*api.ApiError)
+	assert.Assert(t, ok, "%T", err)
+	assert.Check(t, apiErr.Code == http.StatusBadRequest)
+}
+
+func TestSetHeatCurveBySlope__failInvalidMinFlow(t *testing.T) {
+	mock := &mocks.ClientMock{}
+	service := api.NewHeatingApiService(mock)
+	values := openapi.SetHeatCurveBySlopeRequest{
+		Slope:       -1,
+		MinFlowTemp: 1,
+		MaxFlowTemp: 150,
+	}
+	_, err := service.SetHeatCurveBySlope(context.TODO(), 1, values)
+	assert.ErrorContains(t, err, "min flow")
+	apiErr, ok := err.(*api.ApiError)
+	assert.Assert(t, ok, "%T", err)
+	assert.Check(t, apiErr.Code == http.StatusBadRequest)
+}
+
+func TestSetHeatCurveBySlope__failInvalidMaxFlow(t *testing.T) {
+	mock := &mocks.ClientMock{}
+	service := api.NewHeatingApiService(mock)
+	values := openapi.SetHeatCurveBySlopeRequest{
+		Slope:       -1,
+		MinFlowTemp: 10,
+		MaxFlowTemp: 200,
+	}
+	_, err := service.SetHeatCurveBySlope(context.TODO(), 1, values)
+	assert.ErrorContains(t, err, "max flow")
+	apiErr, ok := err.(*api.ApiError)
+	assert.Assert(t, ok, "%T", err)
+	assert.Check(t, apiErr.Code == http.StatusBadRequest)
+}
+
+func TestSetHeatCurveByPoints__failInvalidFlowTempArrayOutdoorTemp(t *testing.T) {
+	mock := &mocks.ClientMock{}
+	service := api.NewHeatingApiService(mock)
+	values := openapi.SetHeatCurveByPointsRequest{
+		MinFlowTemp: 10,
+		MaxFlowTemp: 150,
+		CurvePoints: []openapi.FlowTempPoint{
+			{OutdoorTemp: -7, FlowTemp: 10},
+		},
+	}
+	_, err := service.SetHeatCurveByPoints(context.TODO(), 1, values)
+	assert.ErrorContains(t, err, "outdoor temp -7")
+	apiErr, ok := err.(*api.ApiError)
+	assert.Assert(t, ok, "%T", err)
+	assert.Check(t, apiErr.Code == http.StatusBadRequest)
+}

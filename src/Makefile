@@ -11,21 +11,21 @@ GENERATED_DIR=generated
 
 .PHONY: openapi-clean openapi-generate xx-openapi-generate openapi-validate openapi-download all build test run install list-arch
 
-build-darwin-amd64:
+build-darwin-amd64: openapi-generate
 	GOARCH=amd64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-darwin .
 
-build-darwin-arm:
+build-darwin-arm: openapi-generate
 	GOARCH=arm64 GOOS=darwin go build -o ${BIN_DIR}/${BINARY_NAME}-silicon .
 
-build-windows:
+build-windows: openapi-generate
 	GOARCH=amd64 GOOS=windows go build -o ${BIN_DIR}/${BINARY_NAME}-windows .
 
-build-linux:
+build-linux: openapi-generate
 	GOARCH=amd64 GOOS=linux go build -o ${BIN_DIR}/${BINARY_NAME}-linux .
 
 all: build-linux build-darwin-amd64 build-darwin-arm build-windows
 
-build: openapi-generate build-linux
+build: build-linux
 
 test:
 	go test ./...
