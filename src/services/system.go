@@ -213,3 +213,121 @@ func (s *SystemApiService) GetSystemCircuits(ctx context.Context) (response open
 
 	return openapi.Response(200, body), nil
 }
+
+func (s *SystemApiService) GetSystemDateTime(ctx context.Context) (response openapi.ImplResponse, funcErr error) {
+	defer func() {
+		if panic := recover(); panic != nil {
+			response, funcErr = handlePanic(panic)
+		}
+	}()
+
+	body := s.getDateTime()
+	return openapi.Response(http.StatusOK, body), nil
+}
+
+var pnuHour uint16 = 64045
+var pnuMinute uint16 = 64046
+var pnuDay uint16 = 64047
+var pnuMonth uint16 = 64048
+var pnuYear uint16 = 64049
+var pnuDst uint16 = 10198
+
+func (s *SystemApiService) getDateTime() openapi.GetSystemDateTime {
+	var datetime []byte
+	var dst []byte
+	var err error
+
+	if datetime, err = s.client.ReadHoldingRegisters(pnuHour, 5); err != nil {
+		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("PNU%d:5", pnuHour), err))
+	}
+
+	if dst, err = s.client.ReadHoldingRegisters(pnuDst, 1); err != nil {
+		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("PNU%d:1", pnuDst), err))
+	}
+
+	return openapi.GetSystemDateTime{
+		Hour:               int32(binary.BigEndian.Uint16(datetime[0:2])),
+		Minute:             int32(binary.BigEndian.Uint16(datetime[2:4])),
+		Day:                int32(binary.BigEndian.Uint16(datetime[4:6])),
+		Month:              int32(binary.BigEndian.Uint16(datetime[6:8])),
+		Year:               int32(binary.BigEndian.Uint16(datetime[8:10])),
+		AutoDaylightSaving: binary.BigEndian.Uint16(dst) == uint16(1),
+	}
+}
+
+func (s *SystemApiService) SetSystemDateTime(ctx context.Context, newDateTime openapi.GetSystemDateTime) (response openapi.ImplResponse, funcErr error) {
+	defer func() {
+		if panic := recover(); panic != nil {
+			response, funcErr = handlePanic(panic)
+		}
+	}()
+
+	if newDateTime.Year < 2009 || newDateTime.Year > 2099 {
+		panic(NewApiError(http.StatusBadRequest, fmt.Sprintf("Invalid year %d [2009, 2099]", newDateTime.Year), nil))
+	}
+	if newDateTime.Month < 1 || newDateTime.Month > 12 {
+		panic(NewApiError(http.StatusBadRequest, fmt.Sprintf("Invalid month %d [1, 12]", newDateTime.Month), nil))
+	}
+	if newDateTime.Hour < 0 || newDateTime.Hour > 23 {
+		panic(NewApiError(http.StatusBadRequest, fmt.Sprintf("Invalid hour %d [0, 23]", newDateTime.Hour), nil))
+	}
+	if newDateTime.Minute < 0 || newDateTime.Minute > 59 {
+		panic(NewApiError(http.StatusBadRequest, fmt.Sprintf("Invalid minute %d [0, 59]", newDateTime.Minute), nil))
+	}
+
+	daysPerMonth := map[int32]int32{1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
+
+	if daysPerMonth[newDateTime.Month] < newDateTime.Day {
+		panic(NewApiError(
+			http.StatusBadRequest,
+			fmt.Sprintf("Invalid day %d for month %d [%d]", newDateTime.Day, newDateTime.Month, daysPerMonth[newDateTime.Month]),
+			nil,
+		))
+	}
+
+	if newDateTime.Month == 2 {
+		if newDateTime.Day > 28 && !isLeapYear(newDateTime.Year) {
+			panic(NewApiError(http.StatusBadRequest, fmt.Sprintf("Invalid day %d for month %d", newDateTime.Day, newDateTime.Month), nil))
+		}
+	}
+
+	now := s.getDateTime()
+
+	if newDateTime.Month == 2 && newDateTime.Day == 29 {
+		// must be a leap year, otherwise we would have triggered a panic before
+		// year, day, month
+		updateSinglePnu(s.client, pnuYear, uint16(newDateTime.Year), "year")
+		updateSinglePnu(s.client, pnuDay, uint16(newDateTime.Day), "day")
+		updateSinglePnu(s.client, pnuMonth, uint16(newDateTime.Month), "month")
+	} else if daysPerMonth[newDateTime.Month] > daysPerMonth[now.Month] {
+		// month, day, year
+		updateSinglePnu(s.client, pnuMonth, uint16(newDateTime.Month), "month")
+		updateSinglePnu(s.client, pnuDay, uint16(newDateTime.Day), "day")
+		updateSinglePnu(s.client, pnuYear, uint16(newDateTime.Year), "year")
+	} else {
+		// day, month, year
+		updateSinglePnu(s.client, pnuDay, uint16(newDateTime.Day), "day")
+		updateSinglePnu(s.client, pnuMonth, uint16(newDateTime.Month), "month")
+		updateSinglePnu(s.client, pnuYear, uint16(newDateTime.Year), "year")
+	}
+
+	updateSinglePnu(s.client, pnuHour, uint16(newDateTime.Hour), "hour")
+	updateSinglePnu(s.client, pnuMinute, uint16(newDateTime.Minute), "minute")
+
+	updateSinglePnu(s.client, pnuDst, boolToUint16(newDateTime.AutoDaylightSaving), "DST")
+
+	return s.GetSystemDateTime(ctx)
+}
+
+func isLeapYear(year int32) bool {
+	// we ignore 100/400 year rules, b/c valid range is 2009-2099
+	return year%4 == 0
+}
+
+func boolToUint16(value bool) uint16 {
+	if value {
+		return 1
+	} else {
+		return 0
+	}
+}

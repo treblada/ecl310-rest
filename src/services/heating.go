@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 
@@ -82,9 +81,9 @@ func (s *HeatingApiService) GetHeatCurve(ctx context.Context, circuitNo int32) (
 		panic(NewApiError(http.StatusBadRequest, fmt.Sprintf("Invalid circuit number %d, not in [1,3]", circuitNo), nil))
 	}
 
-	slope := s.readPnu(getSlopePnu(circuitNo), 1)
-	minMax := s.readPnu(getMinMaxPnu(circuitNo), 2)
-	tempCurvePoints := s.readPnu(getTempCurvePointsPnu(circuitNo), 6)
+	slope := readPnu(s.client, getSlopePnu(circuitNo), 1)
+	minMax := readPnu(s.client, getMinMaxPnu(circuitNo), 2)
+	tempCurvePoints := readPnu(s.client, getTempCurvePointsPnu(circuitNo), 6)
 
 	var curvePoints [6]openapi.FlowTempPoint
 	for i := 0; i < len(validOutdoorTemps); i++ {
@@ -125,19 +124,19 @@ func (s *HeatingApiService) SetHeatCurveBySlope(ctx context.Context, circuitNo i
 	if values.Slope != 0 {
 		slopePnu := getSlopePnu(circuitNo)
 		newSlopeInt := uint16(math.Round(float64(values.Slope) * -10))
-		s.updateSinglePnu(slopePnu, newSlopeInt, "slope")
+		updateSinglePnu(s.client, slopePnu, newSlopeInt, "slope")
 	}
 
 	minMaxPnu := getMinMaxPnu(circuitNo)
 
 	if values.MinFlowTemp != 0 {
 		newMinTempInt := uint16(values.MinFlowTemp)
-		s.updateSinglePnu(minMaxPnu, newMinTempInt, "min temp")
+		updateSinglePnu(s.client, minMaxPnu, newMinTempInt, "min temp")
 	}
 
 	if values.MaxFlowTemp != 0 {
 		newMaxTempInt := uint16(values.MaxFlowTemp)
-		s.updateSinglePnu(minMaxPnu+1, newMaxTempInt, "max temp")
+		updateSinglePnu(s.client, minMaxPnu+1, newMaxTempInt, "max temp")
 	}
 
 	return s.GetHeatCurve(ctx, circuitNo)
@@ -169,40 +168,22 @@ func (s *HeatingApiService) SetHeatCurveByPoints(ctx context.Context, circuitNo 
 
 	if values.MinFlowTemp != 0 {
 		newMinTempInt := uint16(values.MinFlowTemp)
-		s.updateSinglePnu(minMaxPnu, newMinTempInt, "min temp")
+		updateSinglePnu(s.client, minMaxPnu, newMinTempInt, "min temp")
 	}
 
 	if values.MaxFlowTemp != 0 {
 		newMaxTempInt := uint16(values.MaxFlowTemp)
-		s.updateSinglePnu(minMaxPnu+1, newMaxTempInt, "max temp")
+		updateSinglePnu(s.client, minMaxPnu+1, newMaxTempInt, "max temp")
 	}
 
 	tempCurvePointsPnu := getTempCurvePointsPnu(circuitNo)
 
 	for _, curvePoint := range values.CurvePoints {
 		i := validOutdoorTemps.indexOf(curvePoint.OutdoorTemp)
-		s.updateSinglePnu(tempCurvePointsPnu+uint16(i), uint16(curvePoint.FlowTemp), fmt.Sprintf("%d outdoor temp", curvePoint.OutdoorTemp))
+		updateSinglePnu(s.client, tempCurvePointsPnu+uint16(i), uint16(curvePoint.FlowTemp), fmt.Sprintf("%d outdoor temp", curvePoint.OutdoorTemp))
 	}
 
 	return s.GetHeatCurve(ctx, circuitNo)
-}
-
-func (s *HeatingApiService) readPnu(pnu uint16, quantity uint16) []byte {
-	if result, err := s.client.ReadHoldingRegisters(pnu, quantity); err == nil {
-		return result
-	} else {
-		panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("Error reading PNU%d:%d", pnu, quantity), err))
-	}
-}
-
-func (s *HeatingApiService) updateSinglePnu(pnu uint16, newValue uint16, label string) {
-	oldValue := binary.BigEndian.Uint16(s.readPnu(pnu, 1))
-	if oldValue != newValue {
-		log.Printf("Updating %s: PNU%d:1 %d -> %d\n", label, pnu, oldValue, newValue)
-		if _, err := s.client.WriteSingleRegister(pnu, newValue); err != nil {
-			panic(NewApiError(http.StatusBadGateway, fmt.Sprintf("Error writing %s PNU%d=%d", label, pnu, newValue), err))
-		}
-	}
 }
 
 func assertValidFlowTemperatureRange(tempValue int32, id string) {

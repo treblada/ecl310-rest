@@ -44,6 +44,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetSystemInfoResponse'
+  /system/datetime:
+    get:
+      tags:
+        - system
+      summary: Get system date and time
+      operationId: getSystemDateTime
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSystemDateTime'
+    post:
+      tags:
+        - system
+      summary: Set system date and time
+      operationId: setSystemDateTime
+      requestBody:
+        description: New date time definition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetSystemDateTime'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSystemDateTime'
   /system/circuits:
     get:
       tags:
@@ -323,3 +355,35 @@ components:
             $ref: '#/components/schemas/FlowTempPoint'
       required:
         - curvePoints
+    GetSystemDateTime:
+      type: object
+      properties:
+        year:
+          type: integer
+          minimum: 2009
+          maximum: 2099
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        day:
+          type: integer
+          minimum: 1
+          maximum: 31
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        minute:
+          type: integer
+          minimum: 0
+          maximum: 59
+        autoDaylightSaving:
+          type: boolean
+          default: true
+      required:
+        - year
+        - month
+        - day
+        - hour
+        - minute
