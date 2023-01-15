@@ -16,26 +16,34 @@ ecl310-rest. If not, see <https://www.gnu.org/licenses/>.
 
 package mocks
 
-import wrapper "github.com/treblada/ecl310-rest/modbus"
+import (
+	wrapper "github.com/treblada/ecl310-rest/modbus"
+)
 
 type Param interface{}
 
 type Call struct {
-	funcName string
-	params   []Param
+	FuncName string
+	Params   []Param
 }
 
 type ClientMock struct {
 	wrapper.ZeroBasedAddressClientWrapper
 	ReadHoldingRegistersMock func(address, quantity uint16) (results []byte, err error)
-	calls                    []Call
+	WriteSingleRegisterMock  func(address, value uint16) (results []byte, err error)
+	Calls                    []Call
 }
 
 func (c *ClientMock) registerCall(funcName string, params ...Param) {
-	c.calls = append(c.calls, Call{funcName: funcName, params: params})
+	c.Calls = append(c.Calls, Call{FuncName: funcName, Params: params})
 }
 
 func (c *ClientMock) ReadHoldingRegisters(address, quantity uint16) (results []byte, err error) {
-	c.registerCall("ReadHoldingRegistersFunc", address, quantity)
+	c.registerCall("ReadHoldingRegisters", address, quantity)
 	return c.ReadHoldingRegistersMock(address, quantity)
+}
+
+func (c *ClientMock) WriteSingleRegister(address, value uint16) (results []byte, err error) {
+	c.registerCall("WriteSingleRegister", address, value)
+	return c.WriteSingleRegisterMock(address, value)
 }
