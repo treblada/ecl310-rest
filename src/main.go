@@ -48,5 +48,6 @@ func main() {
 
 	router := openapi.NewRouter(HealthServiceController, SystemServiceController, HeatingServiceController)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Printf("Listening to local port %d\n", config.listenPort)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.listenPort), router))
 }
